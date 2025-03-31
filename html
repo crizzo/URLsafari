@@ -1,0 +1,132 @@
+// URL Shortener Script
+class URLShortener {
+    constructor() {
+        //
+        this.apiToken = '871c14c6cfea2ffbc3baa5e1c90c5faf215d5a39';
+        this.apiUrl = 'https://api-ssl.bitly.com/v4/shorten';
+    }
+
+    async shortenURL(longURL) {
+        // Basic URL validation
+        if (!this.isValidURL(longURL)) {
+            return { error: 'Invalid URL format' };
+        }
+
+        try {
+            const response = await fetch(this.apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${this.apiToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    long_url: longURL,
+                    domain: 'bit.ly' // You can change this to your custom domain if you have one
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('API request failed');
+            }
+
+            const data = await response.json();
+            return {
+                success: true,
+                shortURL: data.link,
+                originalURL: longURL
+            };
+        } catch (error) {
+            return {
+                error: 'Failed to shorten URL: ' + error.message
+            };
+        }
+    }
+
+    // Simple URL validation
+    isValidURL(url) {
+        try {
+            new URL(url);
+            return true;
+        } catch {
+            return false;
+        }
+    }
+}
+
+// Usage example with a simple HTML interface
+const html = `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>URL Shortener</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        .input-container {
+            margin-bottom: 15px;
+        }
+        input {
+            width: 70%;
+            padding: 8px;
+            margin-right: 10px;
+        }
+        button {
+            padding: 8px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #result {
+            margin-top: 15px;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <h2>URL Shortener</h2>
+    <div class="input-container">
+        <input type="text" id="urlInput" placeholder="Enter URL to shorten">
+        <button onclick="shorten()">Shorten</button>
+    </div>
+    <div id="result"></div>
+
+    <script>
+        const shortener = new URLShortener();
+        
+        async function shorten() {
+            const urlInput = document.getElementById('urlInput').value;
+            const resultDiv = document.getElementById('result');
+            
+            resultDiv.innerHTML = 'Shortening...';
+            
+            const result = await shortener.shortenURL(urlInput);
+            
+            if (result.error) {
+                resultDiv.innerHTML = `<span style="color: red">${result.error}</span>`;
+            } else {
+                resultDiv.innerHTML = `
+                    Short URL: <a href="${result.shortURL}" target="_blank">${result.shortURL}</a><br>
+                    Original URL: ${result.originalURL}
+                `;
+            }
+        }
+
+        // Add enter key support
+        document.getElementById('urlInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                shorten();
+            }
+        });
+    </script>
+</body>
+</html>
+`;
+
